@@ -17,7 +17,6 @@ object main {
   def demoInsertMovie(): Unit = {
     val queryDescription = SlickTables.movieTable += persuitOfHappiness
     val futureId: Future[Int] = Connection.db.run(queryDescription)
-
     futureId.onComplete {
       case Success(newMoviewId) => println(s"Query was successful, new id is $newMoviewId")
       case Failure(ex) => println(s"Query failed, reason $ex")
