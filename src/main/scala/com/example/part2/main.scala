@@ -1,6 +1,8 @@
-package com.example.part1
-import com.example.part1.MyExecutionContext.exec
+package com.example.part2
+import com.example.part2.MyExecutionContext.exec
+import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
+
 import java.time.LocalDate
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
@@ -13,6 +15,11 @@ object MyExecutionContext {
 
 object main {
   val persuitOfHappiness = Movie(1L, "persuit_of_happiness", LocalDate.now(), 60)
+  val jawan = Movie(12L, "jawan", LocalDate.now(), 60)
+
+  val willSmith = Actor(1L, "will_smith")
+  val tomCruise = Actor(2L, "tom_cruise")
+  val shahroukhan = Actor(3L, "shahroukhan")
 
   def demoInsertMovie(): Unit = {
     val queryDescription = SlickTables.movieTable += persuitOfHappiness
@@ -52,12 +59,48 @@ object main {
     Thread.sleep(3000)
   }
 
+  def readMoviesByPlainQuery(): Future[Vector[Movie]] = {
+    implicit val getResultMovie: GetResult[Movie] =
+      GetResult(positionedResult => Movie(
+        positionedResult.<<,
+        positionedResult.<<,
+        LocalDate.parse(positionedResult.nextString()),
+        positionedResult.<<
+      ))
+    val query = sql"""select * from movies."Movie"""".as[Movie]
+    Connection.db.run(query)
+  }
+
+  /*********************************/
+  /*def demoInsertActor(): Unit = {
+    val queryDescription = SlickTables.actorTable ++= Seq(willSmith, tomCruise)
+    val futureId = Connection.db.run(queryDescription)
+    futureId.onComplete {
+      case Success(_) => println("Query of inserting actor was successful")
+      case Failure(ex) => println(s"Query failed, reason $ex")
+    }
+    Thread.sleep(3000)
+  }*/
+
+  def multipleQueriesSingleTransaction(): Future[Unit] = {
+    val insertMovie = SlickTables.movieTable += jawan
+    val insertActor = SlickTables.actorTable += shahroukhan
+    val finalQuery = DBIO.seq(insertMovie, insertActor)
+    Connection.db.run(finalQuery.transactionally)
+  }
+  def findAllActorsByMovie(movieId: Long): Future[Seq[Actor]] = {
+    val joinQuery = SlickTables.movieActorMapping
+      .filter(_.movieId === movieId)
+      .join(SlickTables.actorTable)
+      .on(_.actorId === _.id)
+      .map(_._2)
+    Connection.db.run(joinQuery.result)
+  }
   def main(args: Array[String]): Unit = {
-    demoInsertMovie()
-    demoReadAllMovies()
-    demoUpdate()
-    demoReadAllMovies()
-    demoDelete()
-    demoReadAllMovies()
+    findAllActorsByMovie(12).onComplete {
+      case Success(actors) => println(s"actors from this movie: $actors")
+      case Failure(ex) => println(s"error: $ex")
+    }
+    Thread.sleep(3000)
   }
 }
