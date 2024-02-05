@@ -1,4 +1,4 @@
-package com.example.part2
+package com.example.part3
 import slick.jdbc.PostgresProfile.api._
 
 object Connection {

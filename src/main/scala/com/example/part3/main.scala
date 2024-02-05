@@ -1,5 +1,5 @@
-package com.example.part2
-import com.example.part2.MyExecutionContext.exec
+package com.example.part3
+import com.example.part3.MyExecutionContext.exec
 import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
 
@@ -20,7 +20,10 @@ object main {
   val willSmith = Actor(1L, "will_smith")
   val tomCruise = Actor(2L, "tom_cruise")
   val shahroukhan = Actor(3L, "shahroukhan")
-
+  val providers = List(
+    StreamingProviderMapping(1L, 12L, StreamingService.Netflix),
+    StreamingProviderMapping(2L, 1L, StreamingService.Prime)
+  )
   def demoInsertMovie(): Unit = {
     val queryDescription = SlickTables.movieTable += persuitOfHappiness
     val futureId: Future[Int] = Connection.db.run(queryDescription)
@@ -72,7 +75,8 @@ object main {
   }
 
   /*********************************/
-  /*def demoInsertActor(): Unit = {
+
+  def demoInsertActor(): Unit = {
     val queryDescription = SlickTables.actorTable ++= Seq(willSmith, tomCruise)
     val futureId = Connection.db.run(queryDescription)
     futureId.onComplete {
@@ -80,7 +84,7 @@ object main {
       case Failure(ex) => println(s"Query failed, reason $ex")
     }
     Thread.sleep(3000)
-  }*/
+  }
 
   def multipleQueriesSingleTransaction(): Future[Unit] = {
     val insertMovie = SlickTables.movieTable += jawan
@@ -88,6 +92,7 @@ object main {
     val finalQuery = DBIO.seq(insertMovie, insertActor)
     Connection.db.run(finalQuery.transactionally)
   }
+
   def findAllActorsByMovie(movieId: Long): Future[Seq[Actor]] = {
     val joinQuery = SlickTables.movieActorMapping
       .filter(_.movieId === movieId)
@@ -96,11 +101,25 @@ object main {
       .map(_._2)
     Connection.db.run(joinQuery.result)
   }
-  def main(args: Array[String]): Unit = {
-    findAllActorsByMovie(12).onComplete {
-      case Success(actors) => println(s"actors from this movie: $actors")
-      case Failure(ex) => println(s"error: $ex")
+
+  /**************************/
+  def addStreamingProviders(): Unit = {
+    val insertQuery = SlickTables.streamingProviderMapping ++= providers
+    Connection.db.run(insertQuery).onComplete {
+      case Success(_) => println("inserted streaming providers successfully")
+      case Failure(ex) => println(s"inserting streaming providers error: $ex")
     }
     Thread.sleep(3000)
+  }
+  def findProvidersForMovie(movieId: Long): Unit = {
+    val findQuery = SlickTables.streamingProviderMapping.filter(_.movieId === movieId)
+    Connection.db.run(findQuery.result).onComplete {
+      case Success(movies) => println(s"the providers for $movieId are: ${movies.map(_.provider)}")
+      case Failure(ex) => println(s"findProvidersForMovie error: $ex")
+    }
+    Thread.sleep(3000)
+  }
+  def main(args: Array[String]): Unit = {
+    findProvidersForMovie(12L)
   }
 }
