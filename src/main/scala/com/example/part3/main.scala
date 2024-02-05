@@ -1,5 +1,6 @@
 package com.example.part3
 import com.example.part3.MyExecutionContext.exec
+import play.api.libs.json.Json
 import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
 
@@ -24,6 +25,20 @@ object main {
     StreamingProviderMapping(1L, 12L, StreamingService.Netflix),
     StreamingProviderMapping(2L, 1L, StreamingService.Prime)
   )
+  val jawanLocations = MovieLocations(1L, 12L, List("India", "London", "Italy"))
+  val jawanProperties = MovieProperties(1L, 12L, Map(
+    "Genre" -> "Sci-Fi",
+    "Features" -> "fire works"
+  ))
+
+  val willSmithDetails = ActorDetails(1L, 1L, Json.parse(
+    """
+      |{
+      |"born": 1963,
+      |"type": "super star"
+      |}
+      |""".stripMargin
+  ))
   def demoInsertMovie(): Unit = {
     val queryDescription = SlickTables.movieTable += persuitOfHappiness
     val futureId: Future[Int] = Connection.db.run(queryDescription)
@@ -119,7 +134,34 @@ object main {
     }
     Thread.sleep(3000)
   }
+
+  def insertLocationsJawan(): Unit = {
+    val query = SpecialTables.movieLocationsTable += jawanLocations
+    Connection.db.run(query).onComplete {
+      case Success(_) => println("inserting locations query is done successfully")
+      case Failure(ex) => println(s"insertLocationsJawan error: $ex")
+    }
+    Thread.sleep(3000)
+  }
+
+  def insertPropertiesJawan(): Unit = {
+    val query = SpecialTables.moviePropertiesTable += jawanProperties
+    Connection.db.run(query).onComplete {
+      case Success(_) => println("inserting properties query is done successfully")
+      case Failure(ex) => println(s"insertPropertiesJawan error: $ex")
+    }
+    Thread.sleep(3000)
+  }
+
+  def insertWillSmithDetails(): Unit = {
+    val query = SpecialTables.actorDetailsTable += willSmithDetails
+    Connection.db.run(query).onComplete {
+      case Success(_) => println("inserting details for will smith query is done successfully")
+      case Failure(ex) => println(s"insertWillSmithDetails error: $ex")
+    }
+    Thread.sleep(3000)
+  }
   def main(args: Array[String]): Unit = {
-    findProvidersForMovie(12L)
+    insertWillSmithDetails
   }
 }
